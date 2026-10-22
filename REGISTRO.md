@@ -456,3 +456,13 @@ Con el banco de pruebas al día se cumplen 52 de 53 requisitos.
 2. Se verificó que ningún archivo contenga nombres personales, correos ni rutas locales del computador.
 3. Se actualizó la documentación (`CONTINUAR.md`, `GUIA-PARA-PROFES.md`, `LEEME.md`, `pruebas/INFORME.md`).
 4. Se rehizo el comprimido `VERBOS-juego.zip` en la carpeta superior, dejándolo listo para compartir con los docentes del evento y subir a GitHub / GitHub Pages.
+
+---
+
+## Paso 26 — Publicación en GitHub y despliegue en GitHub Pages
+
+**Qué se hizo.**
+1. El usuario solicitó la publicación en el repositorio remoto: `https://github.com/manuelleal/verborera.git`.
+2. Se inicializó el repositorio Git local en la rama principal `main`, se añadió un archivo `.gitignore` para descartar configuraciones de entorno y temporales, y se preservó la integridad y anonimato del código.
+3. Se realizó el commit inicial y el push hacia `origin main`.
+4. Se activó **GitHub Pages** desde la rama `main` raíz (`/`), dejando el juego disponible públicamente en la web en `https://manuelleal.github.io/verborera/` para ser probado de inmediato desde cualquier celular, tableta o computador sin necesidad de instalación.
