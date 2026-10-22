@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#3f9be8">
+<title>Verbos irregulares</title>
+<style>
+  :root {
+    --tinta: #1b2a4a; --papel: #fffdf2; --blanco: #ffffff; --cielo: #3f9be8;
+    --amarillo: #ffd23f; --naranja: #ff8a3d; --verde: #128a43; --verdeClaro: #b9ffcf;
+    --rojo: #c62828; --azul: #2a6fdb; --morado: #5b3cc4; --turquesa: #128a7e;
+    --letra: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; width: 100%; height: 100%; overflow: hidden;
+    background: var(--cielo); color: var(--tinta); font-family: var(--letra);
+    user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  }
+  #lienzo { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+  .capa {
+    position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+    padding: 8px 10px calc(10px + env(safe-area-inset-bottom)); overflow-y: auto; z-index: 2;
+    pointer-events: none;
+  }
+  .capa > * { pointer-events: auto; }
+  .oculta, [hidden] { display: none !important; }
+  button, select, input { font-family: var(--letra); }
+  button { cursor: pointer; touch-action: manipulation; }
+
+  /* Botones flotantes superiores */
+  .flotante {
+    position: fixed; top: 8px; z-index: 6; border: 3px solid var(--tinta); border-radius: 999px;
+    background: var(--papel); color: var(--tinta); font-weight: 900; font-size: 13px;
+    padding: 5px 11px; box-shadow: 0 3px 0 rgba(27,42,74,.28);
+  }
+  .flotante.izq { left: 8px; }
+  .flotante.der { right: 8px; font-size: 16px; padding: 4px 10px; }
+  .flotante.centro { left: 50%; transform: translateX(-50%); background: var(--amarillo); }
+
+  /* Portada (#menu) y Mapa Vivo de las 6 Cuadras */
+  #menu { justify-content: space-between; }
+  .cartelMenu {
+    text-align: center; margin-top: 2px;
+  }
+  .titulo {
+    margin: 0; font-weight: 900; font-size: clamp(24px, 6.8vw, 48px); line-height: 0.98;
+    color: #fff; letter-spacing: 0.4px; transform: rotate(-1.5deg);
+    text-shadow: -3px -3px 0 var(--tinta), 3px -3px 0 var(--tinta), -3px 3px 0 var(--tinta), 3px 3px 0 var(--tinta), 0 5px 0 rgba(27,42,74,.35);
+  }
+  .titulo span { color: var(--amarillo); display: inline-block; }
+  .subtituloMenu {
+    display: inline-block; margin-top: 4px; padding: 3px 11px; border-radius: 999px;
+    background: var(--tinta); color: #fff; font-weight: 800; font-size: clamp(11px, 3vw, 15px);
+  }
+  .subtituloMenu b { color: var(--amarillo); }
+
+  .panelInferiorMenu {
+    width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 6px;
+    margin-top: auto;
+  }
+  .mapaCaja {
+    background: rgba(255, 253, 242, 0.95); border: 3px solid var(--tinta); border-radius: 16px;
+    padding: 6px 8px; box-shadow: 0 4px 0 rgba(27,42,74,.85);
+  }
+  .mapaCabecera {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    font-weight: 900; font-size: clamp(11.5px, 3vw, 14px); margin-bottom: 4px; flex-wrap: wrap;
+  }
+  .badgeGlobal {
+    background: var(--verdeClaro); color: var(--verde); border: 2px solid var(--tinta);
+    border-radius: 999px; padding: 1px 8px; font-size: 11.5px; font-weight: 900;
+  }
+  .gridCuadras {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;
+  }
+  @media (min-width: 720px) {
+    .gridCuadras { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  }
+  .cuadraItem {
+    background: #fff; border: 2.5px solid var(--tinta); border-radius: 11px;
+    padding: 4px 6px; cursor: pointer; transition: transform .08s;
+    box-shadow: 0 2px 0 rgba(27,42,74,.2);
+  }
+  .cuadraItem.activa {
+    background: #fff5c0; border-color: #b97a00; outline: 2.5px solid var(--amarillo);
+  }
+  .cuadraItem.bloqueada { opacity: 0.62; background: #e9eef6; cursor: default; }
+  .cuadraCab {
+    display: flex; justify-content: space-between; align-items: center; gap: 4px;
+    font-weight: 900; font-size: clamp(10px, 2.5vw, 12.5px); line-height: 1.1; margin-bottom: 3px;
+  }
+  .cuadraNom { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cuadraEst { font-size: 10px; color: #425275; font-weight: 800; white-space: nowrap; }
+  .ladrillos {
+    display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px;
+  }
+  .ladrillo {
+    height: 7px; border-radius: 2px; background: #cbd3e1; border: 1px solid rgba(27,42,74,.35);
+    font-size: 0; overflow: hidden; display: block;
+  }
+  .ladrillo.practicando { background: #ffb62e; border-color: #9e6300; }
+  .ladrillo.sabido { background: #1e9e56; border-color: #0d5f31; }
+  .filaProfeMapa {
+    display: flex; justify-content: flex-end; margin-top: 4px;
+  }
+  .btnProfeMini {
+    border: 2px solid var(--tinta); border-radius: 999px; background: #fff; color: var(--tinta);
+    font-size: 11px; font-weight: 800; padding: 2px 9px;
+  }
+  .btnProfeMini.activo { background: var(--amarillo); }
+
+  /* Botones principales */
+  .boton {
+    border: 3.5px solid var(--tinta); border-radius: 18px; padding: 9px 12px;
+    background: linear-gradient(180deg, #ffe36e, #ffb62e); color: var(--tinta);
+    font-weight: 900; font-size: clamp(18px, 5vw, 28px); line-height: 1.08;
+    box-shadow: 0 5px 0 var(--tinta); text-align: center; width: 100%;
+  }
+  .boton:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--tinta); }
+  .boton.secundario {
+    background: var(--papel); font-size: clamp(12px, 3.2vw, 15.5px); padding: 7px 8px;
+    border-radius: 14px; border-width: 3px; box-shadow: 0 3px 0 var(--tinta);
+  }
+  .boton.salonBtn { background: linear-gradient(180deg, #e8f3ff, #c5dfff); }
+  .boton.profeBtn { background: linear-gradient(180deg, #e6ffef, #b9ffcf); }
+  .boton.mini { width: auto; font-size: 13px; padding: 5px 11px; border-radius: 11px; box-shadow: 0 2px 0 var(--tinta); }
+
+  .accionesMenu {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  }
+  @media (min-width: 720px) {
+    .accionesMenu { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  /* Tarjetas modales (#grupos, #prepost, #profe, #salonConfig, #final) */
+  .hojaModal {
+    width: 100%; max-width: 760px; background: var(--papel); border: 4px solid var(--tinta);
+    border-radius: 20px; padding: 12px; box-shadow: 0 8px 0 rgba(27,42,74,.45);
+    margin: auto 0; max-height: 92vh; overflow-y: auto;
+  }
+  .hojaModal h2 { margin: 0 0 6px; font-size: clamp(18px, 4.8vw, 26px); font-weight: 900; }
+  .barraTabs { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0 10px; }
+  .tabBtn {
+    border: 2.5px solid var(--tinta); border-radius: 999px; background: #fff; color: var(--tinta);
+    font-weight: 800; font-size: 12px; padding: 4px 10px;
+  }
+  .tabBtn.activa, .tabBtn.activo { background: var(--amarillo); }
+  .tarjetaGrupo {
+    background: #fff; border: 3px solid var(--tinta); border-radius: 14px; padding: 8px 10px; margin-bottom: 8px;
+  }
+  .tarjetaGrupo .cabecera { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .tarjetaGrupo .nombre { font-weight: 900; font-size: 15px; }
+  .tarjetaGrupo .idea { font-size: 12.5px; color: #4a5a78; font-weight: 700; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip {
+    display: inline-block; padding: 4px 8px; border-radius: 9px; border: 2px solid var(--tinta);
+    background: #f3f6fb; font-size: 12.5px; font-weight: 700; cursor: pointer;
+  }
+  .chip.visto { background: #fff3c4; }
+  .chip.ok { background: #d6ffe4; border-color: var(--verde); }
+  .filaBotones { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
+  .filaBotones .boton { flex: 1 1 160px; }
+
+  /* El Puente de Revisión (#revision) y Caja de 8 Fichas (4x2) */
+  #revision { justify-content: flex-start; padding-top: 6px; }
+  .panelRevision {
+    width: 100%; max-width: 680px; background: rgba(255, 253, 242, 0.96);
+    border: 4px solid var(--tinta); border-radius: 18px; padding: 8px 10px;
+    box-shadow: 0 6px 0 rgba(27,42,74,.45);
+  }
+  #revision.lado .panelRevision { max-width: 920px; }
+  .marcadorSalon {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 6px;
+  }
+  .pillEquipo {
+    padding: 3px 10px; border-radius: 999px; border: 2.5px solid var(--tinta);
+    font-weight: 900; font-size: 12.5px;
+  }
+  .pillEquipo.activo { outline: 3px solid var(--amarillo); }
+  .filaSuperiorRev {
+    display: flex; justify-content: space-between; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 900; color: #3b4d71;
+  }
+  #revOracion {
+    margin: 5px 0 3px; font-weight: 900; font-size: clamp(19px, 5.4vw, 30px);
+    line-height: 1.18; text-align: center; color: var(--tinta);
+  }
+  #revOracion .hueco {
+    display: inline-block; min-width: 2.5em; padding: 0 6px; border-bottom: 4px solid var(--azul);
+    color: var(--azul); font-weight: 900;
+  }
+  #revOracion .hueco.lleno { color: var(--verde); border-color: var(--verde); }
+  #revOracion .hueco.error { color: var(--rojo); border-color: var(--rojo); }
+  #revPista {
+    text-align: center; font-size: clamp(12px, 3.2vw, 15px); font-weight: 800; color: #43557a; margin-bottom: 6px;
+  }
+  .explicacionCaja {
+    background: #fff3cd; border: 2.5px solid var(--tinta); border-radius: 11px;
+    padding: 5px 8px; margin-bottom: 6px; font-size: clamp(12.5px, 3.3vw, 15px);
+    font-weight: 700; text-align: center; color: var(--tinta);
+  }
+  .opcionesGrid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px;
+  }
+  .carta {
+    min-height: 54px; padding: 6px 4px; border-radius: 14px; border: 3.5px solid var(--tinta);
+    background: #fff; color: var(--tinta); font-weight: 900; font-size: clamp(16px, 4.6vw, 24px);
+    box-shadow: 0 4px 0 var(--tinta); text-align: center;
+  }
+  .carta.paso {
+    grid-column: 1 / -1; min-height: 42px; font-size: 14px; background: #eef2f9; color: #3a4b6e;
+  }
+  .carta.bien { background: var(--verdeClaro); border-color: var(--verde); }
+  .carta.bien.enVuelo { opacity: 0; pointer-events: none; }
+  .carta.mal { background: #ffc2c2; border-color: var(--rojo); text-decoration: line-through; }
+  .carta.apagada { opacity: 0.45; }
+
+  /* Caja de 8 Fichas de Letras (4x2) */
+  #revFichasCaja { width: 100%; }
+  .visorFila {
+    display: flex; align-items: stretch; gap: 6px; margin-bottom: 6px;
+  }
+  #revVisorFichas {
+    flex: 1 1 auto; min-height: 48px; background: #fff; border: 3.5px solid var(--tinta);
+    border-radius: 13px; padding: 4px 8px; display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+  }
+  #revVisorTexto {
+    font-weight: 900; font-size: clamp(19px, 5.2vw, 26px); letter-spacing: 2px; color: var(--tinta);
+    line-height: 1.1;
+  }
+  #revVisorTexto.correcto { color: var(--verde); }
+  #revVisorTexto.error { color: var(--rojo); }
+  #revVisorTexto.enVuelo { opacity: 0; }
+  #revVisorAyuda {
+    font-size: 11px; font-weight: 800; color: #526385; margin-top: 2px; text-align: center;
+  }
+  .btnVozFicha {
+    min-width: 48px; min-height: 48px; border-radius: 13px; border: 3.5px solid var(--tinta);
+    background: #e8f3ff; font-size: 20px; box-shadow: 0 3px 0 var(--tinta);
+  }
+  .btnVozFicha.escuchando { background: #ffb8b8; }
+  .btnListoFicha {
+    min-width: 88px; min-height: 48px; padding: 0 12px; border-radius: 13px;
+    border: 3.5px solid var(--tinta); background: #1e9e56; color: #fff;
+    font-weight: 900; font-size: clamp(15px, 4vw, 19px); box-shadow: 0 3px 0 var(--tinta);
+  }
+  .gridFichas4x2 {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%;
+  }
+  .fichaLetra {
+    min-height: 50px; height: 52px; border-radius: 13px; border: 3.5px solid var(--tinta);
+    background: linear-gradient(180deg, #fff8d6, #ffd23f); color: var(--tinta);
+    font-weight: 900; font-size: 24px; box-shadow: 0 3.5px 0 var(--tinta);
+    display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .fichaLetra.borrar { background: linear-gradient(180deg, #ffe3e3, #ff9e9e); font-size: 22px; }
+  .fichaLetra.apagada { opacity: 0.28; pointer-events: none; box-shadow: none; transform: translateY(2px); }
+  .fichaLetra:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--tinta); }
+
+  /* Pantalla Final (#final) */
+  #final { justify-content: space-between; }
+  #finPuntajeCaja {
+    background: rgba(255, 253, 242, 0.94); border: 3.5px solid var(--tinta); border-radius: 18px;
+    padding: 6px 14px; text-align: center; max-width: 680px; width: 100%;
+    box-shadow: 0 4px 0 rgba(27,42,74,.35);
+  }
+  #finTitulo { margin: 0; font-size: clamp(22px, 5.5vw, 34px); font-weight: 900; color: var(--tinta); }
+  #finMotivo { margin: 2px 0 4px; font-size: clamp(12.5px, 3.2vw, 15px); font-weight: 800; color: #3f5175; }
+  .filaPuntosFinal { display: flex; justify-content: center; align-items: baseline; gap: 10px; }
+  #finPuntos { font-weight: 900; font-size: clamp(20px, 5vw, 28px); color: var(--azul); }
+  #finRecord { font-weight: 800; font-size: 13px; color: var(--verde); }
+  .espacioEscenaFinal { flex: 1 1 160px; min-height: 150px; width: 100%; pointer-events: none; }
+  .panelFinalAbajo {
+    width: 100%; max-width: 720px; background: rgba(255, 253, 242, 0.96);
+    border: 4px solid var(--tinta); border-radius: 20px; padding: 10px 12px;
+    box-shadow: 0 6px 0 rgba(27,42,74,.45); max-height: 46vh; overflow-y: auto;
+  }
+  .cajaCodigoProfe {
+    background: #fff6c9; border: 3px solid var(--tinta); border-radius: 14px;
+    padding: 6px 10px; margin-bottom: 8px; display: flex; flex-wrap: wrap;
+    align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .codigoBadge {
+    font: 900 22px/1.1 ui-monospace, Consolas, monospace; letter-spacing: 3px;
+    background: var(--tinta); color: var(--amarillo); padding: 4px 10px; border-radius: 9px;
+  }
+  .filaVerbo {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 6px 9px; border-radius: 10px; border: 2px solid var(--tinta);
+    background: #fff; margin: 4px 0; font-size: 13.5px; font-weight: 800; cursor: pointer;
+  }
+  .filaVerbo.ok { border-left: 7px solid var(--verde); }
+  .filaVerbo.rep { border-left: 7px solid var(--naranja); }
+  .filaVerbo .es { color: #4c5d80; font-weight: 700; font-size: 12.5px; }
+
+  /* Vista del Profe y barras Pre/Post */
+  .barraFila { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+  .barraFila .etq { width: 110px; font-weight: 900; font-size: 13.5px; }
+  .barraPista {
+    flex: 1; height: 28px; background: #e5ebf5; border: 2.5px solid var(--tinta);
+    border-radius: 999px; overflow: hidden;
+  }
+  .barraRelleno {
+    height: 100%; display: flex; align-items: center; padding: 0 10px;
+    font-weight: 900; font-size: 12.5px; color: var(--tinta); white-space: nowrap;
+  }
+  .barraRelleno.pre { background: linear-gradient(90deg, #ff9f43, #ffd23f); }
+  .barraRelleno.post { background: linear-gradient(90deg, #22b562, #7bed9f); }
+  .inputCodigo {
+    border: 3px solid var(--tinta); border-radius: 11px; padding: 6px 10px;
+    font: 900 16px ui-monospace, Consolas, monospace; text-transform: uppercase; width: 140px;
+  }
+</style>
+</head>
+<body>
+<canvas id="lienzo"></canvas>
+
+<button id="btnSalir" class="flotante izq oculta" type="button">← Menú</button>
+<button id="btnPausaSalon" class="flotante centro oculta" type="button">⏸ Pausa del Profe</button>
+<button id="btnAudio" class="flotante der" type="button" aria-label="Silenciar">🔊</button>
+
+<!-- PORTADA CON MAPA VIVO DE LAS 6 CUADRAS -->
+<div id="menu" class="capa">
+  <div class="cartelMenu">
+    <h1 class="titulo">VERBOS <span>IRREGULARES</span></h1>
+    <div class="subtituloMenu">¡Corre al colegio! <b>go → went → gone</b></div>
+  </div>
+
+  <div class="panelInferiorMenu">
+    <div class="mapaCaja">
+      <div class="mapaCabecera">
+        <span>🗺️ Camino al Colegio · 6 Cuadras</span>
+        <span id="mapaResumenGlobal" class="badgeGlobal">0 / 60 ¡Sabidos!</span>
+      </div>
+      <div id="mapaCuadras" class="gridCuadras"></div>
+      <div class="filaProfeMapa">
+        <button id="btnDesbloquearProfe" class="btnProfeMini" type="button">🔓 Soy el profe: abrir todas las cuadras</button>
+      </div>
+    </div>
+
+    <button id="btnJugar" class="boton" type="button">¡A correr! · Cuadra 1 (10 verbos)</button>
+
+    <div class="accionesMenu">
+      <button id="btnModoSalon" class="boton secundario salonBtn" type="button">🏆 Modo Salón · Equipos (15 min)</button>
+      <button id="btnTermometroMenu" class="boton secundario profeBtn" type="button">⏱️ Termómetro Pre/Post · Vista del Profe</button>
+      <button id="btnRepasar" class="boton secundario oculta" type="button">Lo que me cuesta</button>
+      <button id="btnGrupos" class="boton secundario" type="button">Álbum de verbos (0/60)</button>
+    </div>
+  </div>
+</div>
+
+<!-- ÁLBUM Y GRUPOS DE VERBOS -->
+<div id="grupos" class="capa oculta">
+  <div class="hojaModal">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+      <h2>📖 Álbum de Verbos</h2>
+      <button id="btnVolverMenu" class="boton mini" type="button">← Volver al menú</button>
+    </div>
+    <p id="progresoTexto" style="margin:2px 0 6px;font-weight:800;font-size:13.5px;color:#3f5175;"></p>
+    <div id="albumPestanas" class="barraTabs"></div>
+    <div id="listaGrupos"></div>
+  </div>
+</div>
+
+<!-- PUENTE DE REVISIÓN (CON OPCIONES Y CAJA DE 8 FICHAS 4×2) -->
+<div id="revision" class="capa oculta">
+  <div class="panelRevision">
+    <div id="revMarcadorSalon" class="marcadorSalon oculta"></div>
+    <div class="filaSuperiorRev">
+      <span id="revContador">Verbo 1 de 4</span>
+      <span id="revFormas">GO → ___ → GONE</span>
+    </div>
+    <div id="revOracion">Yesterday I <span class="hueco">___</span> to school.</div>
+    <div id="revPista">💡 Pista</div>
+    <div id="revExplicacion" class="explicacionCaja oculta"></div>
+
+    <div id="revOpciones" class="opcionesGrid"></div>
+
+    <div id="revFichasCaja" class="oculta">
+      <div class="visorFila">
+        <div id="revVisorFichas">
+          <div id="revVisorTexto">_ _ _ _</div>
+          <div id="revVisorAyuda">Arma el verbo con las fichas</div>
+        </div>
+        <button id="btnFichaVoz" class="btnVozFicha oculta" type="button" title="Decirlo en voz alta">🎤</button>
+        <button id="btnFichaListo" class="btnListoFicha" type="button">✓ Listo</button>
+      </div>
+      <div id="revGridFichas" class="gridFichas4x2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PANTALLA FINAL -->
+<div id="final" class="capa oculta">
+  <div id="finPuntajeCaja">
+    <h1 id="finTitulo">¡Llegaste al colegio!</h1>
+    <p id="finMotivo"></p>
+    <div class="filaPuntosFinal">
+      <span id="finPuntos">0 pts</span>
+      <span id="finRecord"></span>
+    </div>
+  </div>
+
+  <div class="espacioEscenaFinal"></div>
+
+  <div class="panelFinalAbajo">
+    <div id="cajaCodigoProfe" class="cajaCodigoProfe">
+      <div>
+        <div style="font-weight:900;font-size:13px;">Código verificable para el Profesor:</div>
+        <div style="font-size:11.5px;color:#4a5a78;font-weight:700;">Resume tu cuadra, avance Pre→Post y verbos por reforzar</div>
+      </div>
+      <span id="textoCodigoProfe" class="codigoBadge">125BDK</span>
+      <button id="btnCopiarCodigo" class="boton mini profeBtn" type="button">📋 Copiar código para el profe</button>
+    </div>
+
+    <div id="resumenVerbos"></div>
+
+    <div class="filaBotones">
+      <button id="btnReintentar" class="boton" type="button">¡Otra vez!</button>
+      <button id="btnMenuFinal" class="boton secundario" type="button">🏠 Menú principal</button>
+    </div>
+  </div>
+</div>
+
+<!-- TERMÓMETRO PRE / POST (5 PREGUNTAS, 45 s) -->
+<div id="prepost" class="capa oculta">
+  <div class="hojaModal">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+      <h2>⏱️ Termómetro Pre / Post (45 s)</h2>
+      <div style="display:flex;gap:6px;">
+        <button id="btnIrVistaProfe" class="boton mini profeBtn" type="button">👩‍🏫 Vista del Profe</button>
+        <button id="btnVolverPrePost" class="boton mini secundario" type="button">← Menú</button>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px;">
+      <label for="prepostTramo" style="font-weight:900;font-size:13.5px;">Cuadra:</label>
+      <select id="prepostTramo" style="border:2.5px solid var(--tinta);border-radius:10px;padding:4px 8px;font-weight:800;">
+        <option value="1">Cuadra 1 · Salida de Casa</option>
+        <option value="2">Cuadra 2 · La Panadería</option>
+        <option value="3">Cuadra 3 · El Parque</option>
+        <option value="4">Cuadra 4 · La Estación</option>
+        <option value="5">Cuadra 5 · El Puente Mayor</option>
+        <option value="6">Cuadra 6 · El Colegio</option>
+      </select>
+      <button id="prepostBtnPre" class="tabBtn activo" type="button">Antes (Pre-Test)</button>
+      <button id="prepostBtnPost" class="tabBtn" type="button">Después (Post-Test)</button>
+    </div>
+
+    <div id="prepostPreguntaCaja">
+      <div style="display:flex;justify-content:space-between;font-weight:900;font-size:13px;color:#3f5175;margin-bottom:4px;">
+        <span id="prepostEstado">Diagnóstico PRE · Pregunta 1 de 5</span>
+        <span id="prepostReloj">⏱ 45 s</span>
+      </div>
+      <div id="prepostEnunciado" style="font-weight:900;font-size:clamp(19px,5vw,27px);text-align:center;margin:8px 0 4px;"></div>
+      <div id="prepostSub" style="text-align:center;font-weight:800;font-size:13.5px;color:#4a5a78;margin-bottom:10px;"></div>
+      <div id="prepostOpciones" class="opcionesGrid"></div>
+    </div>
+
+    <div id="prepostResultadoCaja" class="oculta" style="text-align:center;padding:8px 4px;"></div>
+  </div>
+</div>
+
+<!-- VISTA DEL PROFESOR (TABLERO DE SALÓN) -->
+<div id="profe" class="capa oculta">
+  <div class="hojaModal">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+      <h2>👩‍🏫 Vista del Profesor · Tablero del Salón</h2>
+      <button id="btnVolverProfe" class="boton mini secundario" type="button">← Menú</button>
+    </div>
+
+    <p id="profeResumenTexto" style="margin:4px 0 8px;font-weight:900;font-size:14px;color:var(--verde);"></p>
+
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px;">
+      <button id="btnCargarEjemploSalon" class="boton mini profeBtn" type="button">✨ Cargar ejemplo de salón (25 estudiantes)</button>
+      <input id="inputCodigoProfe" class="inputCodigo" type="text" maxlength="8" placeholder="Ej: 125BDK" aria-label="Código de estudiante">
+      <button id="btnAgregarCodigoProfe" class="boton mini salonBtn" type="button">➕ Agregar código de estudiante</button>
+    </div>
+
+    <div style="background:#fff;border:3px solid var(--tinta);border-radius:14px;padding:8px 10px;margin-bottom:10px;">
+      <div style="font-weight:900;font-size:14px;margin-bottom:4px;">📊 Comparación Promedio Antes (Pre) vs. Después (Post)</div>
+      <div id="profeBarras"></div>
+    </div>
+
+    <div style="background:#fff;border:3px solid var(--tinta);border-radius:14px;padding:8px 10px;margin-bottom:10px;">
+      <div style="font-weight:900;font-size:14px;margin-bottom:4px;">🎯 Los 3 verbos que más costaron en el salón</div>
+      <div id="profeTopErrores"></div>
+    </div>
+
+    <button id="btnRevanchaSalonProfe" class="boton" type="button">🚀 Jugar revancha en Modo Salón con estos verbos</button>
+  </div>
+</div>
+
+<!-- CONFIGURACIÓN MODO SALÓN POR EQUIPOS (15 MIN) -->
+<div id="salonConfig" class="capa oculta">
+  <div class="hojaModal">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+      <h2>🏆 Modo Salón por Equipos (15 min)</h2>
+      <button id="btnVolverSalon" class="boton mini secundario" type="button">← Menú</button>
+    </div>
+    <p style="margin:0 0 10px;font-weight:700;font-size:14px;color:#394b6e;">
+      Diseñado para 1 proyector y 30 estudiantes: relevos de 4 verbos por equipo, carriles numerados <b>[ 1 ] · [ 2 ] · [ 3 ]</b> para votar desde el puesto, pausa del profesor con <b>Espacio</b> y Gran Puente Final con <b> ¡Rebote!</b>
+    </p>
+    <div style="margin-bottom:12px;">
+      <label for="salonTramoSelect" style="font-weight:900;font-size:14px;display:block;margin-bottom:4px;">Elige la Cuadra para la clase de hoy:</label>
+      <select id="salonTramoSelect" style="width:100%;border:3px solid var(--tinta);border-radius:12px;padding:8px;font-weight:900;font-size:15px;">
+        <option value="1">Cuadra 1 · Salida de Casa (10 verbos)</option>
+        <option value="2">Cuadra 2 · La Panadería (10 verbos)</option>
+        <option value="3">Cuadra 3 · El Parque (10 verbos)</option>
+        <option value="4">Cuadra 4 · La Estación (10 verbos)</option>
+        <option value="5">Cuadra 5 · El Puente Mayor (10 verbos)</option>
+        <option value="6">Cuadra 6 · El Colegio (10 verbos)</option>
+      </select>
+    </div>
+    <div class="filaBotones">
+      <button id="btnSalon2Eq" class="boton salonBtn" type="button">🟦🟨 Jugar con 2 Equipos</button>
+      <button id="btnSalon3Eq" class="boton" type="button">🟦🟨🟩 Jugar con 3 Equipos</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/verbos.js"></script>
+<script src="js/oraciones.js"></script>
+<script src="js/reglas.js"></script>
+<script src="js/logica.js"></script>
+<script src="js/juego.js"></script>
+</body>
+</html>
